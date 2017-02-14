@@ -3,6 +3,11 @@ require 'net/https'
 require 'uri'
 require 'json'
 
+require_relative '../parser'
+require_relative '../presenter'
+require_relative '../sorter'
+require_relative '../fetcher'
+
 describe 'Classification kata' do
   it 'get the JSON parsed' do
     # #Arrange
@@ -59,55 +64,14 @@ describe 'Classification kata' do
 4 | Barcelona | 7
 5 | Madrid | 5")
   end
-end
 
-class Parser
-  def initialize(json)
-    @json = json
+  it 'gets some json from an url' do
+    url = 'https://classification-kata.herokuapp.com/'
+    fetcher = Fetcher.new(url)
+    some_json = '{"classification":[{"name":"Madrid","points":5},{"name":"Valencia","points":10},{"name":"Barcelona","points":7},{"name":"Zaragoza","points":8},{"name":"Bilbao","points":9}]}'
+
+    result = fetcher.call
+
+    expect(result).to eq(some_json)
   end
-
-  def parse
-    JSON.parse(@json)['classification']
-  end
-end
-
-class Sorter
-  def initialize(list)
-    @list = list
-  end
-
-  def sort
-    @list.sort do |x, y|
-      y['points'] <=> x['points']
-    end
-  end
-end
-
-class Presenter
-  def initialize(list)
-    @list = list
-  end
-
-  def present
-    header = "indice | ciudad | puntos\n"
-
-    output = @list.map.with_index do |item, index|
-      "#{index + 1} | #{item['name']} | #{item['points']}"
-    end
-
-    header + output.join("\n")
-  end
-end
-
-def parsed_response_arrr
-  url = 'https://classification-kata.herokuapp.com/'
-  response = get(url)
-
-  JSON.parse(response)
-end
-
-def get(url)
-  uri = URI(url)
-
-  Net::HTTP.get(uri)
 end
