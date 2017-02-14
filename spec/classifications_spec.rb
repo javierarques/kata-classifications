@@ -11,14 +11,43 @@ require_relative '../fetcher'
 require 'vcr'
 
 VCR.configure do |config|
-  config.cassette_library_dir = "fixtures/vcr_cassettes"
+  config.cassette_library_dir = "spec/fixtures/vcr_cassettes"
   config.hook_into :webmock # or :fakeweb
+end
+
+class Ranker
+  URL = 'https://classification-kata.herokuapp.com/'.freeze
+
+  def call
+    json = Fetcher.new(URL).call
+    parsed_json = Parser.new(json).parse
+    sorted_list = Sorter.new(parsed_json).sort
+    Presenter.new(sorted_list).present
+  end
+end
+
+describe 'Integration test' do
+  it 'gives sorted list' do
+    VCR.use_cassette("fetcher") do
+      ranker = Ranker.new
+
+      result = ranker.call
+
+      expect(result).to eq("indice | ciudad | puntos
+1 | Valencia | 10
+2 | Bilbao | 9
+3 | Zaragoza | 8
+4 | Barcelona | 7
+5 | Madrid | 5")
+    end
+  end
 end
 
 describe 'Classification kata' do
   it 'get the JSON parsed' do
     # #Arrange
-    some_json = '{"classification":[{"name":"Madrid","points":5},{"name":"Valencia","points":10},{"name":"Barcelona","points":7},{"name":"Zaragoza","points":8},{"name":"Bilbao","points":9}]}'
+    path = File.expand_path("./fixtures/classification.json", File.dirname(__FILE__))
+    some_json = File.read(path)
     parser = Parser.new(some_json)
 
     # #Act
